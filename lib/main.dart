@@ -244,10 +244,11 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
         if (echo.ringing.isNotEmpty) RingOverlay(s: echo, round: round) else if (echo.words) WordsOverlay(s: echo, round: round),
       ]);
     }
-    return Scaffold(
+    // never left by Back (a remote, a keyboard's Escape): the screen app is all there is; its sheets still close by it
+    return PopScope(canPop: false, child: Scaffold(
       backgroundColor: Colors.black,
       body: Listener(onPointerDown: (_) => touched = DateTime.now(), child: body),
-    );
+    ));
   }
 
   Widget _handle() => Align(
