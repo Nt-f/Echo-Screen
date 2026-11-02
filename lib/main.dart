@@ -67,7 +67,16 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
       if (mounted && r == true) setState(() => round = true);
     }).catchError((_) {});
     _schedule(Duration.zero);
-    feed.start((s) { if (mounted) setState(() => echo = s); });      // the words, a ring, the clock's next alarm
+    feed.start((s) {                            // the words, a ring, the clock's next alarm, the screen's mode
+      if (!mounted) return;
+      final keep = s.display == 'always' || s.display == 'always_dim';
+      if (keep != (echo.display == 'always' || echo.display == 'always_dim') || echo.v == 0) {
+        // "always on": the window keeps the screen on too, whatever the screen timeout says (hassmic sets that, but
+        // a tool that sets it after hassmic would put the screen to sleep, and a sleeping panel takes no touch)
+        const MethodChannel('hassmic/keys').invokeMethod('keepOn', keep).catchError((_) => null);
+      }
+      setState(() => echo = s);
+    });
   }
 
   @override

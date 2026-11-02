@@ -5,6 +5,7 @@ import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import io.flutter.embedding.android.FlutterActivity
@@ -31,6 +32,11 @@ class MainActivity : FlutterActivity() {
                     Class.forName("android.os.SystemProperties").getMethod("get", String::class.java).invoke(null, "debug.hassmic.round") as String
                 } catch (e: Exception) { "" }
                 result.success(resources.configuration.isScreenRound || prop == "1"); return@setMethodCallHandler
+            }
+            if (call.method == "keepOn") {              // hassmic's "always on": the screen never sleeps while the app shows
+                if (call.arguments as Boolean) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                result.success(true); return@setMethodCallHandler
             }
             if (call.method == "hasInputMethod") {      // an Echo: none; elsewhere the device's own keyboard types
                 val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
