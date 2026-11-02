@@ -49,6 +49,7 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   WebViewController? web;
   int current = -1;
   String injectedFor = '';
+  String loaded = '';                           // the page the WebView has (under the clock too)
   DateTime touched = DateTime.now();
   bool bar = false, typing = false, numbers = false;
   bool ownKeyboard = true;                      // false where the device has an input method of its own (not an Echo)
@@ -119,6 +120,12 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
 
   static String _urls(ScreenConfig c) => c.screens.map((s) => s.url).join('\n');
 
+  /// the first web page among the screens (where a tap on the clock goes), the current one where there is none
+  int _firstPage(ScreenConfig c) {
+    final i = c.screens.indexWhere((s) => !s.url.startsWith('hassmic:'));
+    return i < 0 ? current : i;
+  }
+
   /// the screen shown is one this app draws (hassmic:clock), not a page
   bool ownScreen(ScreenConfig c) => current >= 0 && current < c.screens.length && c.screens[current].url == 'hassmic:clock';
 
@@ -141,7 +148,7 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
         onWebResourceError: (e) {
           if (e.isForMainFrame != true) return;
           final at = current;                   // Home Assistant restarting, Wi-Fi back later: the screen again
-          Timer(const Duration(seconds: 15), () { if (mounted && current == at) _show(at); });
+          Timer(const Duration(seconds: 15), () { if (mounted && current == at) { loaded = ''; _show(at); } });
         },
       ));
     if (w.platform is AndroidWebViewController) {
@@ -152,6 +159,7 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   }
 
   void _stop() {
+    loaded = '';
     setState(() { web = null; current = -1; typing = false; bar = false; });    // the WebView goes with its widget
   }
 
@@ -166,8 +174,20 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
     if (c == null || w == null || i < 0 || i >= c.screens.length) return;
     setState(() { current = i; bar = false; typing = false; });
     touched = DateTime.now();
-    final url = c.screens[i].url, hao = _origin(c.ha);
-    if (url.startsWith('hassmic:')) return;     // drawn here (build), nothing to load
+    var url = c.screens[i].url;
+    if (url.startsWith('hassmic:')) {           // drawn here (build); the page a tap fades into loads under it meanwhile
+      final f = _firstPage(c);
+      if (f < 0 || f == i || c.screens[f].url == loaded) return;
+      url = c.screens[f].url;
+    } else if (url == loaded) {
+      return;                                   // there already (it loaded under the clock)
+    }
+    _load(c, w, url);
+  }
+
+  void _load(ScreenConfig c, WebViewController w, String url) {
+    final hao = _origin(c.ha);
+    loaded = url;
     if (c.token.isNotEmpty && hao.isNotEmpty && _origin(url) == hao && injectedFor != hao) {
       // the login: the token into Home Assistant's origin as its frontend keeps its own, before its first page
       injectedFor = hao;
@@ -199,7 +219,12 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
         Expanded(child: Stack(children: [
           // a screen of hassmic's this app draws, else the page; the WebView stays (its page kept) under the clock
           WebViewWidget(controller: w),
-          if (ownScreen(c)) Positioned.fill(child: ClockScreen(s: echo, round: round)),
+          // the clock fades in over the page (back after idle) and out into it (a tap: the first web screen)
+          Positioned.fill(child: IgnorePointer(ignoring: !ownScreen(c), child: AnimatedOpacity(
+            opacity: ownScreen(c) ? 1 : 0, duration: const Duration(milliseconds: 450), curve: Curves.easeInOut,
+            child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => _show(_firstPage(c)),
+                child: ClockScreen(s: echo, round: round)),
+          ))),
           _handle(),
           if (bar) _switcher(c),
         ])),
