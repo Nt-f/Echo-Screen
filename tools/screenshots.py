@@ -222,8 +222,7 @@ def main():
             screen(w, h, dpi)
             hm.screens(token, 0)
             adb("shell", "am", "start", "-a", "org.hassmic.action.SCREEN", "-c", "android.intent.category.DEFAULT", PKG)
-            time.sleep(25)                      # Home Assistant's frontend in the WebView
-            shot(os.path.join(out, f"{mid}-dashboard.png"), round_)
+            time.sleep(25)                      # Home Assistant's frontend in the WebView (no shot of it alone: it is HA's)
             adb("shell", "input", "tap", str(w // 2), str(max(4, 12 * dpi // 160)))        # the handle
             time.sleep(2)
             shot(os.path.join(out, f"{mid}-switcher.png"), round_)
