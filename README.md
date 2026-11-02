@@ -11,12 +11,36 @@ works and make it yours:
 - a handle at the top edge: tap it for the screens and a reload
 - back to the start screen after the time the integration says, untouched
 - an on-screen keyboard (the Echo has no input method): it comes up when a text field in the page has the focus and
-  types with real key events (`MainActivity.kt`)
+  types with real key events (`MainActivity.kt`); on a device with a keyboard of its own, that one comes instead
+- round screens (Echo Spot): the switcher and the keyboard kept inside the circle
 
 The contract with hassmic (how the app is started, where its config comes from, what it tells hassmic) is in
 echo-dot-assist's [docs/screen-apps.md](https://github.com/Nt-f/echo-dot-assist/blob/main/docs/screen-apps.md);
 `lib/hassmic.dart` is this app's side of it. The config also carries Home Assistant's address and a token for its
 websocket API, for screens drawn in Flutter instead of a WebView.
+
+## On other Echo screens
+
+The same app at each display Echo's resolution and density, in an Android emulator (`tools/screenshots.py`), with
+the demo integration's made-up home: Home Assistant's dashboard, the switcher (the handle tapped), the keyboard on a
+sign-in page. Only the Echo Show 5 has run it for real so far; the emulator shows layout, not speed. On a round
+screen (Android's `isScreenRound`) the switcher sits lower and the keyboard's rows follow the circle. The Echo Dots
+with a clock have LED segments, no screen for this.
+
+| Model | Screen | dpi | Dashboard | Switcher | Keyboard |
+|---|---|---|---|---|---|
+| Echo Show 5 (all three) | 960 × 480 | 160 (measured) | <img src="docs/screenshots/show5-dashboard.png" width="220"> | <img src="docs/screenshots/show5-switcher.png" width="220"> | <img src="docs/screenshots/show5-keyboard.png" width="220"> |
+| Echo Show 8 (1st–3rd gen), Show 10, Echo Hub | 1280 × 800 | 213 (measured, 1st gen) | <img src="docs/screenshots/show8-dashboard.png" width="220"> | <img src="docs/screenshots/show8-switcher.png" width="220"> | <img src="docs/screenshots/show8-keyboard.png" width="220"> |
+| Echo Show 8 (2025) | 1340 × 800 | 213 (estimated) | <img src="docs/screenshots/show8-2025-dashboard.png" width="220"> | <img src="docs/screenshots/show8-2025-switcher.png" width="220"> | <img src="docs/screenshots/show8-2025-keyboard.png" width="220"> |
+| Echo Show 11 (2025) | 1920 × 1200 | 240 (estimated) | <img src="docs/screenshots/show11-dashboard.png" width="220"> | <img src="docs/screenshots/show11-switcher.png" width="220"> | <img src="docs/screenshots/show11-keyboard.png" width="220"> |
+| Echo Show 15 / 21 | 1920 × 1080 | 160 (estimated) | <img src="docs/screenshots/show15-dashboard.png" width="220"> | <img src="docs/screenshots/show15-switcher.png" width="220"> | <img src="docs/screenshots/show15-keyboard.png" width="220"> |
+| Echo Show 15, hung upright | 1080 × 1920 | 160 (estimated) | <img src="docs/screenshots/show15-portrait-dashboard.png" width="220"> | <img src="docs/screenshots/show15-portrait-switcher.png" width="220"> | <img src="docs/screenshots/show15-portrait-keyboard.png" width="220"> |
+| Echo Show (1st gen) | 1024 × 600 | 160 (estimated) | <img src="docs/screenshots/show1-dashboard.png" width="220"> | <img src="docs/screenshots/show1-switcher.png" width="220"> | <img src="docs/screenshots/show1-keyboard.png" width="220"> |
+| Echo Spot (1st gen), round | 480 × 480 | 240 (estimated) | <img src="docs/screenshots/spot-dashboard.png" width="220"> | <img src="docs/screenshots/spot-switcher.png" width="220"> | <img src="docs/screenshots/spot-keyboard.png" width="220"> |
+| Echo Spot (2024) | 320 × 240 | 120 (estimated) | <img src="docs/screenshots/spot2024-dashboard.png" width="220"> | <img src="docs/screenshots/spot2024-switcher.png" width="220"> | <img src="docs/screenshots/spot2024-keyboard.png" width="220"> |
+
+Again: `flutter build apk --release --target-platform android-x64`, start an emulator, then
+`python3 tools/screenshots.py --serial emulator-5554` (its header says what it needs).
 
 ## Build
 

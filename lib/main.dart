@@ -48,12 +48,20 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   String injectedFor = '';
   DateTime touched = DateTime.now();
   bool bar = false, typing = false, numbers = false;
+  bool ownKeyboard = true;                      // false where the device has an input method of its own (not an Echo)
+  bool round = false;                           // a round screen (Echo Spot): nothing near its corners
   Timer? poller, hideBar;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    const MethodChannel('hassmic/keys').invokeMethod<bool>('hasInputMethod').then((has) {
+      if (mounted && has == true) setState(() => ownKeyboard = false);
+    }).catchError((_) {});
+    const MethodChannel('hassmic/keys').invokeMethod<bool>('isRound').then((r) {
+      if (mounted && r == true) setState(() => round = true);
+    }).catchError((_) {});
     _schedule(Duration.zero);
   }
 
@@ -184,8 +192,9 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
           _handle(),
           if (bar) _switcher(c),
         ])),
-        if (typing)
+        if (typing && ownKeyboard)
           Keyboard(
+            round: round,
             numbers: numbers,
             fallback: (s) => w.runJavaScript('document.execCommand("insertText",false,${jsonEncode(s)})'),
             onHide: () => setState(() => typing = false),
@@ -219,22 +228,25 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
 
   void _hideBar() { hideBar?.cancel(); if (mounted) setState(() => bar = false); }
 
-  Widget _switcher(ScreenConfig c) => Align(
+  // the screens' pills: scrolled sideways where they do not fit (a Spot's 320 dp), on a round screen lower and narrower
+  // (the circle's chord at the top is short)
+  Widget _switcher(ScreenConfig c) => LayoutBuilder(builder: (context, box) => Align(
         alignment: Alignment.topCenter,
         child: Container(
-          margin: const EdgeInsets.only(top: 28),
+          margin: EdgeInsets.only(top: round ? box.maxHeight * .2 : 28),
+          constraints: BoxConstraints(maxWidth: box.maxWidth * (round ? .86 : 1) - 16),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(color: const Color(0xe6202124), borderRadius: BorderRadius.circular(18)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
+          child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: [
             for (var i = 0; i < c.screens.length; i++)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: _pill(c.screens[i].name, i == current ? 0x55ffffff : 0x33ffffff, () => _show(i)),
               ),
             _pill('↻', 0x22ffffff, () { _hideBar(); web?.reload(); }),
-          ]),
+          ])),
         ),
-      );
+      ));
 
   Widget _pill(String text, int color, VoidCallback onTap) => GestureDetector(
         onTap: onTap,

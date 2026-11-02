@@ -1,6 +1,7 @@
 // The on-screen keyboard: the Echo has no input method.  Keys go to the WebView as real key events
 // (MainActivity.kt, channel "hassmic/keys"); a character the key map lacks is inserted by script.
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -8,9 +9,10 @@ typedef InsertText = Future<void> Function(String text);
 
 class Keyboard extends StatefulWidget {
   final bool numbers;                   // a number field: the digits first
+  final bool round;                     // a round screen: the keys kept off the circle's edge
   final InsertText fallback;
   final VoidCallback onHide;
-  const Keyboard({super.key, required this.numbers, required this.fallback, required this.onHide});
+  const Keyboard({super.key, required this.numbers, required this.fallback, required this.onHide, this.round = false});
   @override
   State<Keyboard> createState() => _KeyboardState();
 }
@@ -79,12 +81,27 @@ class _KeyboardState extends State<Keyboard> {
 
   @override
   Widget build(BuildContext context) {
+    // as wide as a tablet's keyboard at most (a Show 15's 1920 px of keys would be a reach), centred; on a round screen
+    // inset so that the outer keys stay inside the circle
+    final size = MediaQuery.sizeOf(context);
+    var rows = symbols ? _symbols : _letters;
+    // round: the bottom row where the circle is narrow keeps its four keys that matter (@ . , are under ?123)
+    if (widget.round) rows = [...rows.take(3), symbols ? const ['ABC', ' ', '⏎', '⌄'] : const ['?123', ' ', '⏎', '⌄']];
+    // a round screen: each row as wide as the circle is at its height (a 52 px row, counted from the bottom), less a margin
+    double inset(int i) {
+      if (!widget.round) return 0;
+      final r = min(size.width, size.height) / 2, fromBottom = 30 + 26 + 52.0 * (rows.length - 1 - i);
+      final d = (size.height / 2 - fromBottom).abs() + 26;            // the row's far edge from the centre
+      final half = d >= r ? 0.0 : sqrt(r * r - d * d);
+      return max(0.0, size.width / 2 - half * .94);
+    }
     return Container(
       color: const Color(0xff1c1c1e),
-      padding: const EdgeInsets.fromLTRB(4, 5, 4, 5),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        for (final row in symbols ? _symbols : _letters)
-          Row(children: [
+      padding: EdgeInsets.fromLTRB(4, 5, 4, widget.round ? 30 : 5),
+      alignment: Alignment.center,
+      child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 860), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        for (final (i, row) in rows.indexed)
+          Padding(padding: EdgeInsets.symmetric(horizontal: inset(i)), child: Row(children: [
             for (final k in row)
               Expanded(
                 flex: k == ' ' ? 46 : _special.contains(k) ? 15 : 10,
@@ -97,8 +114,8 @@ class _KeyboardState extends State<Keyboard> {
                   onCancel: () => _repeat?.cancel(),
                 ),
               ),
-          ]),
-      ]),
+          ])),
+      ])),
     );
   }
 }
@@ -126,8 +143,9 @@ class _KeyState extends State<_Key> {
         margin: const EdgeInsets.all(3),
         decoration: BoxDecoration(color: pressed ? bg.withValues(alpha: .6) : bg, borderRadius: BorderRadius.circular(7)),
         alignment: Alignment.center,
-        child: Text(widget.label,
-            style: TextStyle(color: widget.lit ? Colors.black : Colors.white, fontSize: widget.label.length == 1 ? 20 : 15)),
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: FittedBox(fit: BoxFit.scaleDown, child: Text(widget.label, maxLines: 1,
+            style: TextStyle(color: widget.lit ? Colors.black : Colors.white, fontSize: widget.label.length == 1 ? 20 : 15))),
       ),
     );
   }
