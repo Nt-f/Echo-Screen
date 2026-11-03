@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
+import 'apps.dart';
 import 'hassmic.dart';
 import 'echo_ui.dart';
 import 'keyboard.dart';
@@ -42,6 +43,7 @@ document.addEventListener('focusout',function(){setTimeout(tell,60)},true);tell(
 
 class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   final hassmic = Hassmic();
+  final apps = Apps();                          // the owner's other apps, in the switcher (apps.dart)
   final feed = EchoStateFeed();
   EchoState echo = const EchoState();
   ScreenConfig? cfg;
@@ -60,6 +62,7 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    apps.addListener(() { if (mounted) setState(() {}); });
     const MethodChannel('echo_screen/keys').invokeMethod<bool>('hasInputMethod').then((has) {
       if (mounted && has == true) setState(() => ownKeyboard = false);
     }).catchError((_) {});
@@ -94,12 +97,15 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
     final now = s == AppLifecycleState.resumed;
     if (now == front) return;
     front = now;
+    if (now) apps.lent = false;                 // back from the app it started (Back there, or the app bar's Home)
     _schedule(Duration.zero);                   // /front or /back at once: hassmic takes or gives the screen by them
   }
 
   void _schedule(Duration d) {
     poller?.cancel();
     poller = Timer(d, () async {
+      // paused for an app it started: the app bar's process polls /lent meanwhile; a /back here would end that
+      if (!front && apps.lent) { _schedule(const Duration(seconds: 30)); return; }
       final c = await hassmic.poll(front: front);
       if (!mounted) return;
       if (front) _apply(c);
@@ -296,19 +302,31 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: _pill(c.screens[i].name, i == current ? 0x55ffffff : 0x33ffffff, () => _show(i)),
               ),
+            // the owner's other apps after the screens, each with its own icon (apps.dart)
+            for (final a in apps.list)
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: _pill(a.label, 0x33ffffff, () => _launch(a.package), icon: a.icon)),
             _pill('↻', 0x22ffffff, () { _hideBar(); web?.reload(); }),
           ])),
         ),
       ));
 
-  Widget _pill(String text, int color, VoidCallback onTap) => GestureDetector(
+  Widget _pill(String text, int color, VoidCallback onTap, {Uint8List? icon}) => GestureDetector(
         onTap: onTap,
         child: Container(
           height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: EdgeInsets.only(left: icon == null ? 18 : 10, right: 18),
           alignment: Alignment.center,
           decoration: BoxDecoration(color: Color(color), borderRadius: BorderRadius.circular(14)),
-          child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (icon != null) Padding(padding: const EdgeInsets.only(right: 8), child: Image.memory(icon, width: 26, height: 26, gaplessPlayback: true)),
+            Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
+          ]),
         ),
       );
+
+  /// another app of the owner's, with the app bar over it (apps.dart): the switcher's pills
+  void _launch(String package) {
+    _hideBar();
+    apps.launch(package);
+  }
 }
