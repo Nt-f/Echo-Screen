@@ -12,7 +12,6 @@ import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
-import 'apps.dart';
 import 'hassmic.dart';
 import 'echo_ui.dart';
 import 'keyboard.dart';
@@ -43,7 +42,6 @@ document.addEventListener('focusout',function(){setTimeout(tell,60)},true);tell(
 
 class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   final hassmic = Hassmic();
-  final apps = Apps();                          // the owner's other apps, in the switcher (apps.dart)
   final feed = EchoStateFeed();
   EchoState echo = const EchoState();
   ScreenConfig? cfg;
@@ -53,7 +51,7 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   String injectedFor = '';
   String loaded = '';                           // the page the WebView has (under the clock too)
   DateTime touched = DateTime.now();
-  bool bar = false, typing = false, numbers = false;
+  bool typing = false, numbers = false;
   bool ownKeyboard = true;                      // false where the device has an input method of its own (not an Echo)
   bool round = false;                           // a round screen (Echo Spot): nothing near its corners
   Timer? poller, hideBar;
@@ -62,7 +60,14 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    apps.addListener(() { if (mounted) setState(() {}); });
+    // the bar of places (the screens, the apps) is hassmic's shell's, over this app as over every other (echo-dot-assist
+    // docs/screen-apps.md "The shell"): it starts this activity with the screen asked for (MainActivity onNewIntent)
+    const MethodChannel('echo_screen/nav').setMethodCallHandler((m) async {
+      final c = cfg;
+      if (!mounted || c == null) return;
+      if (m.method == 'home') _show(c.defaultScreen);
+      if (m.method == 'screen') { final i = c.screens.indexWhere((s) => s.name == m.arguments); if (i >= 0) _show(i); }
+    });
     const MethodChannel('echo_screen/keys').invokeMethod<bool>('hasInputMethod').then((has) {
       if (mounted && has == true) setState(() => ownKeyboard = false);
     }).catchError((_) {});
@@ -97,15 +102,12 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
     final now = s == AppLifecycleState.resumed;
     if (now == front) return;
     front = now;
-    if (now) apps.lent = false;                 // back from the app it started (Back there, or the app bar's Home)
     _schedule(Duration.zero);                   // /front or /back at once: hassmic takes or gives the screen by them
   }
 
   void _schedule(Duration d) {
     poller?.cancel();
     poller = Timer(d, () async {
-      // paused for an app it started: the app bar's process polls /lent meanwhile; a /back here would end that
-      if (!front && apps.lent) { _schedule(const Duration(seconds: 30)); return; }
       final c = await hassmic.poll(front: front);
       if (!mounted) return;
       if (front) _apply(c);
@@ -175,7 +177,7 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
 
   void _stop() {
     loaded = '';
-    setState(() { web = null; current = -1; typing = false; bar = false; });    // the WebView goes with its widget
+    setState(() { web = null; current = -1; typing = false; });    // the WebView goes with its widget
   }
 
   static String _origin(String u) {
@@ -187,7 +189,7 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   void _show(int i) {
     final c = cfg, w = web;
     if (c == null || w == null || i < 0 || i >= c.screens.length) return;
-    setState(() { current = i; bar = false; typing = false; });
+    setState(() { current = i; typing = false; });
     touched = DateTime.now();
     var url = c.screens[i].url;
     if (url.startsWith('hassmic:')) {           // drawn here (build); the page a tap fades into loads under it meanwhile
@@ -240,8 +242,6 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
             child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => _show(_firstPage(c)),
                 child: ClockScreen(s: echo, round: round)),
           ))),
-          _handle(),
-          if (bar) _switcher(c),
         ])),
         if (typing && ownKeyboard && !ownScreen(c))
           Keyboard(
@@ -264,69 +264,5 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
       backgroundColor: Colors.black,
       body: Listener(onPointerDown: (_) => touched = DateTime.now(), child: body),
     ));
-  }
-
-  Widget _handle() => Align(
-        alignment: Alignment.topCenter,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => bar ? _hideBar() : _showBar(),
-          child: SizedBox(
-            width: 120, height: 24,
-            child: Center(child: Container(width: 56, height: 5, decoration: BoxDecoration(
-                color: const Color(0x99a0a0a0), border: Border.all(color: const Color(0x55000000)), borderRadius: BorderRadius.circular(3)))),
-          ),
-        ),
-      );
-
-  void _showBar() {
-    setState(() => bar = true);
-    hideBar?.cancel();
-    hideBar = Timer(const Duration(seconds: 8), _hideBar);
-  }
-
-  void _hideBar() { hideBar?.cancel(); if (mounted) setState(() => bar = false); }
-
-  // the screens' pills: scrolled sideways where they do not fit (a Spot's 320 dp), on a round screen lower and narrower
-  // (the circle's chord at the top is short)
-  Widget _switcher(ScreenConfig c) => LayoutBuilder(builder: (context, box) => Align(
-        alignment: Alignment.topCenter,
-        child: Container(
-          margin: EdgeInsets.only(top: round ? box.maxHeight * .2 : 28),
-          constraints: BoxConstraints(maxWidth: box.maxWidth * (round ? .86 : 1) - 16),
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: const Color(0xe6202124), borderRadius: BorderRadius.circular(18)),
-          child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: [
-            for (var i = 0; i < c.screens.length; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: _pill(c.screens[i].name, i == current ? 0x55ffffff : 0x33ffffff, () => _show(i)),
-              ),
-            // the owner's other apps after the screens, each with its own icon (apps.dart)
-            for (final a in apps.list)
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: _pill(a.label, 0x33ffffff, () => _launch(a.package), icon: a.icon)),
-            _pill('↻', 0x22ffffff, () { _hideBar(); web?.reload(); }),
-          ])),
-        ),
-      ));
-
-  Widget _pill(String text, int color, VoidCallback onTap, {Uint8List? icon}) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 44,
-          padding: EdgeInsets.only(left: icon == null ? 18 : 10, right: 18),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: Color(color), borderRadius: BorderRadius.circular(14)),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (icon != null) Padding(padding: const EdgeInsets.only(right: 8), child: Image.memory(icon, width: 26, height: 26, gaplessPlayback: true)),
-            Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
-          ]),
-        ),
-      );
-
-  /// another app of the owner's, with the app bar over it (apps.dart): the switcher's pills
-  void _launch(String package) {
-    _hideBar();
-    apps.launch(package);
   }
 }

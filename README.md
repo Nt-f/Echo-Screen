@@ -8,11 +8,13 @@ works and make it yours:
 
 - the screens Home Assistant's Echo Local integration lists (Home Assistant's dashboards, Music Assistant, any page) in
   a WebView, logged into Home Assistant with the Echo's own token (no typing: the integration made a user for it)
-- a handle at the top edge: tap it for the screens and a reload
+- the screens in hassmic's own bar (pulled down from the top edge over any app, with the apps you installed): it
+  starts this app with the screen picked, which the app shows (`MainActivity.kt` `onNewIntent`, the extras `screen` and
+  `home`); no bar of the app's own
 - back to the start screen after the time the integration says, untouched
 - an on-screen keyboard (the Echo has no input method): it comes up when a text field in the page has the focus and
   types with real key events (`MainActivity.kt`); on a device with a keyboard of its own, that one comes instead
-- round screens (Echo Spot): the switcher and the keyboard kept inside the circle
+- round screens (Echo Spot): the keyboard kept inside the circle
 - hassmic's own pictures in the app's look (it polls `/front/draws`, so hassmic leaves the screen to it): the clock as
   a screen ("Clock" in the integration's options), a request's words, an alarm or timer ringing, from hassmic's state
   feed (`/kiosk/state`, a long poll: words appear as hassmic has them); taps on a ring still reach hassmic
@@ -45,8 +47,9 @@ Dots with a clock have LED segments, no screen for this.
 <details><summary>Over Home Assistant's own pages: the switcher and the keyboard</summary>
 
 A tap on the clock fades into the screens the integration lists (the demo integration's made-up home here). The page
-itself is Home Assistant's; the template's part is the switcher (the handle at the top tapped) and the keyboard on a
-sign-in page. On a round screen the switcher sits lower and the keyboard's rows follow the circle.
+itself is Home Assistant's; the template's part is the keyboard on a sign-in page (the screenshots of the switcher
+show the template's own bar of before: hassmic's shell has the bar now). On a round screen the keyboard's rows follow
+the circle.
 
 | Model | Switcher | Keyboard |
 |---|---|---|
