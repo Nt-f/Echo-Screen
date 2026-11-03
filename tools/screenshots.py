@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Screenshots of hassmic-screen on Echo screens, for the README (docs/screenshots/).
+"""Screenshots of Echo-Screen on Echo screens, for the README (docs/screenshots/).
 
 Every model is an Android emulator with that screen's resolution and density (not Fire OS: layouts and resolution are
 what this shows, not the Echo's speed); what it shows comes from a Home Assistant with the demo integration (made-up
@@ -21,7 +21,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SDK = os.environ.get("ANDROID_HOME", os.path.expanduser("~/Android/Sdk"))
 ADB, EMU = os.path.join(SDK, "platform-tools", "adb"), os.path.join(SDK, "emulator", "emulator")
 HA_PORT, HASSMIC_PORT, SERIAL = 18123, 28931, "emulator-5554"
-PKG = "org.hassmic.screen"
+PKG = "io.github.nt_f.echoscreen"
 
 # (id, name, width, height, density, density known or estimated, round)
 MODELS = [
@@ -158,7 +158,7 @@ DISABLED = set()
 
 
 def restore():
-    adb("shell", "setprop", "debug.hassmic.round", "0", check=False)
+    adb("shell", "setprop", "debug.echoscreen.round", "0", check=False)
     for pkg in DISABLED: adb("shell", "pm", "enable", pkg, check=False)
     for c in (("wm", "size", "reset"), ("wm", "density", "reset"), ("settings", "put", "system", "accelerometer_rotation", "1"),
               ("settings", "delete", "secure", "immersive_mode_confirmations")):
@@ -218,10 +218,10 @@ def main():
             if a.only and m[0] not in a.only.split(","): continue
             mid, title, w, h, dpi, _, round_ = m
             print(f"{title}: {w} x {h} @ {dpi}", flush=True)
-            adb("shell", "setprop", "debug.hassmic.round", "1" if round_ else "0")      # the app's round layout
+            adb("shell", "setprop", "debug.echoscreen.round", "1" if round_ else "0")      # the app's round layout
             screen(w, h, dpi)
             hm.screens(token, 0)
-            adb("shell", "am", "start", "-a", "org.hassmic.action.SCREEN", "-c", "android.intent.category.DEFAULT", PKG)
+            adb("shell", "am", "start", "-a", "io.github.gamer92000.echodotassist.action.SCREEN", "-c", "android.intent.category.DEFAULT", PKG)
             time.sleep(25)                      # Home Assistant's frontend in the WebView (no shot of it alone: it is HA's)
             adb("shell", "input", "tap", str(w // 2), str(max(4, 12 * dpi // 160)))        # the handle
             time.sleep(2)

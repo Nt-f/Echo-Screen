@@ -1,4 +1,4 @@
-name: hassmic_screen
+name: echo_screen
 description: "A screen app for an Echo Show running hassmic (Home Assistant on the screen), in Flutter."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

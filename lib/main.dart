@@ -1,4 +1,4 @@
-// hassmic-screen: a screen app for an Echo Show running hassmic (echo-dot-assist docs/screen-apps.md), in Flutter.
+// Echo-Screen: a screen app for an Echo Show running hassmic (echo-dot-assist docs/screen-apps.md), in Flutter.
 // It does what hassmic's own Java kiosk does, as a template to build on: the screens Home Assistant's hassmic
 // integration chose (Home Assistant's dashboards, Music Assistant, any page) in a WebView, logged into Home Assistant
 // with the Echo's own token, a handle at the top edge to switch, back to the start screen after a while untouched, and
@@ -60,10 +60,10 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    const MethodChannel('hassmic/keys').invokeMethod<bool>('hasInputMethod').then((has) {
+    const MethodChannel('echo_screen/keys').invokeMethod<bool>('hasInputMethod').then((has) {
       if (mounted && has == true) setState(() => ownKeyboard = false);
     }).catchError((_) {});
-    const MethodChannel('hassmic/keys').invokeMethod<bool>('isRound').then((r) {
+    const MethodChannel('echo_screen/keys').invokeMethod<bool>('isRound').then((r) {
       if (mounted && r == true) setState(() => round = true);
     }).catchError((_) {});
     _schedule(Duration.zero);
@@ -73,7 +73,7 @@ class _ScreenAppState extends State<ScreenApp> with WidgetsBindingObserver {
       if (keep != (echo.display == 'always' || echo.display == 'always_dim') || echo.v == 0) {
         // "always on": the window keeps the screen on too, whatever the screen timeout says (hassmic sets that, but
         // a tool that sets it after hassmic would put the screen to sleep, and a sleeping panel takes no touch)
-        const MethodChannel('hassmic/keys').invokeMethod('keepOn', keep).catchError((_) => null);
+        const MethodChannel('echo_screen/keys').invokeMethod('keepOn', keep).catchError((_) => null);
       }
       setState(() => echo = s);
     });

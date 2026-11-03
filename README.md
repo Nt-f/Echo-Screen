@@ -1,4 +1,4 @@
-# hassmic-screen
+# Echo-Screen
 
 A screen app for an Amazon Echo Show running [hassmic](https://github.com/Nt-f/echo-dot-assist), in Flutter: what
 the Echo Show's screen shows: a clock to start on, a request's words, a ringing alarm, and Home Assistant's pages.
@@ -6,7 +6,7 @@ the Echo Show's screen shows: a clock to start on, a request's words, a ringing 
 This is the template. It does what hassmic's built-in Java kiosk does, so that you can start from something that
 works and make it yours:
 
-- the screens Home Assistant's hassmic integration lists (Home Assistant's dashboards, Music Assistant, any page) in
+- the screens Home Assistant's Echo Local integration lists (Home Assistant's dashboards, Music Assistant, any page) in
   a WebView, logged into Home Assistant with the Echo's own token (no typing: the integration made a user for it)
 - a handle at the top edge: tap it for the screens and a reload
 - back to the start screen after the time the integration says, untouched
@@ -84,9 +84,9 @@ key as the installed app. CI builds the APK on every push and attaches it to a r
 adb install build/app/outputs/flutter-apk/app-release.apk
 ```
 
-Then in Home Assistant: Settings › Devices & services › hassmic › Configure on the Echo Show, "Screen app":
-`org.hassmic.screen` (your fork: its `applicationId`). Empty brings hassmic's own kiosk back. hassmic starts the app
-by the intent `org.hassmic.action.SCREEN` and hands its config to that app alone.
+Then in Home Assistant: Settings › Devices & services › Echo Local › Configure on the Echo Show, "Screen app":
+`io.github.nt_f.echoscreen` (your fork: its `applicationId`). Empty brings hassmic's own kiosk back. hassmic starts the app
+by the intent `io.github.gamer92000.echodotassist.action.SCREEN` and hands its config to that app alone.
 
 ## Make it yours
 

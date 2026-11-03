@@ -1,5 +1,5 @@
 // The on-screen keyboard: the Echo has no input method.  Keys go to the WebView as real key events
-// (MainActivity.kt, channel "hassmic/keys"); a character the key map lacks is inserted by script.
+// (MainActivity.kt, channel "echo_screen/keys"); a character the key map lacks is inserted by script.
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -32,7 +32,7 @@ const _symbols = [
 const _special = {'⇧', '⌫', '?123', 'ABC', '⏎', '⌄'};
 
 class _KeyboardState extends State<Keyboard> {
-  static const _keys = MethodChannel('hassmic/keys');
+  static const _keys = MethodChannel('echo_screen/keys');
   late bool symbols = widget.numbers;
   bool shift = false;
   Timer? _repeat;
