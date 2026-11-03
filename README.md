@@ -1,36 +1,53 @@
 # Echo-Screen
 
-A screen app for an Amazon Echo Show running [hassmic](https://github.com/Nt-f/echo-dot-assist), in Flutter: what
-the Echo Show's screen shows: a clock to start on, a request's words, a ringing alarm, and Home Assistant's pages.
+**The smallest home app for an Echo Show running [echo-dot-assist](https://github.com/Nt-f/echo-dot-assist): fork it
+and make the screen yours.**
 
-This is the template. It does what hassmic's built-in Java kiosk does, so that you can start from something that
-works and make it yours:
+A Flutter app that already does everything the Echo asks of a home app, so you can start from something that works:
+Home Assistant's pages logged in with no typing, the screen picked in the Echo's drawer, a request's words and a
+ringing alarm in your own look. [Echo-Wall](https://github.com/Nt-f/Echo-Wall) grew out of it.
 
-- the screens Home Assistant's Echo Local integration lists (Home Assistant's dashboards, Music Assistant, any page) in
-  a WebView, logged into Home Assistant with the Echo's own token (no typing: the integration made a user for it)
-- the screens in hassmic's own bar (pulled down from the top edge over any app, with the apps you installed): it
-  starts this app with the screen picked, which the app shows (`MainActivity.kt` `onNewIntent`, the extras `screen` and
-  `home`); no bar of the app's own
-- back to the start screen after the time the integration says, untouched
-- an on-screen keyboard (the Echo has no input method): it comes up when a text field in the page has the focus and
-  types with real key events (`MainActivity.kt`); on a device with a keyboard of its own, that one comes instead
-- round screens (Echo Spot): the keyboard kept inside the circle
-- hassmic's own pictures in the app's look (it polls `/front/draws`, so hassmic leaves the screen to it): the clock as
-  a screen ("Clock" in the integration's options), a request's words, an alarm or timer ringing, from hassmic's state
-  feed (`/kiosk/state`, a long poll: words appear as hassmic has them); taps on a ring still reach hassmic
+<img src="docs/screenshots/show5-clock.png" width="32%"> <img src="docs/screenshots/show5-request.png" width="32%"> <img src="docs/screenshots/show5-alarm.png" width="32%">
 
-The contract with hassmic (how the app is started, where its config comes from, what it tells hassmic) is in
+> [!CAUTION]
+> **Vibecoded, unaudited, your risk.** Written by an AI (Claude) in conversation with the author, and run for real on
+> one Echo Show 5 so far; every other screen below is an emulator's. No warranty, no support.
+
+## What it does
+
+|                              |                                                                                  |
+|------------------------------|----------------------------------------------------------------------------------|
+| **Home Assistant's pages**   | the screens Echo Local lists (dashboards, Music Assistant, any page) in a WebView, logged in with the Echo's own token |
+| **The Echo's drawer**        | opens the screen picked there (the SCREEN intent's `screen` and `home` extras: `MainActivity.kt` `onNewIntent`) |
+| **Back to the start**        | after the time Echo Local says, untouched                                        |
+| **Its own look for the Echo's moments** | the clock as a screen, a request's words as they come, a ringing alarm (tap snoozes, hold stops) |
+| **A keyboard**               | for the pages' text fields (the Echo has none): real key events, kept inside the circle on a round screen |
+
+The contract with the Echo (how it starts the app, where the config comes from, what the app claims) is
 echo-dot-assist's [docs/screen-apps.md](https://github.com/Nt-f/echo-dot-assist/blob/main/docs/screen-apps.md);
 `lib/hassmic.dart` is this app's side of it. The config also carries Home Assistant's address and a token for its
 websocket API, for screens drawn in Flutter instead of a WebView.
 
-## On other Echo screens
+## Make it yours
 
-What the template draws itself, at each display Echo's resolution and density in an Android emulator
-(`tools/screenshots.py`): the clock (the `hassmic:clock` screen, the one an Echo starts on), a request's words over
-it as they come in, an alarm ringing (`/kiosk/state`). Only the Echo Show 5 has run it for real so far; the emulator
-shows layout, not speed. On a round screen (Android's `isScreenRound`) everything is kept inside the circle. The Echo
-Dots with a clock have LED segments, no screen for this.
+Fork it, change `applicationId` in `android/app/build.gradle.kts`, and replace the WebView in `lib/main.dart` with
+your own screens. Keep it light: on an Echo Show 5 this app with Home Assistant in its WebView takes 81 MB of the 1 GB
+Android, hassmic and the screen share, and its Mali-T720 (no Vulkan) runs Flutter on OpenGL ES at 60 fps until a
+full-screen live blur halves that.
+
+## Build and install
+
+```sh
+flutter build apk --release --target-platform android-arm     # Flutter 3.41.2
+```
+
+Install it from the Echo's settings page (Screen › Add an app) or Echo Local's Apps tab (or `adb install`), then make
+it the home app there or in Echo Local › Screen › Home app (`io.github.nt_f.echoscreen`, or your fork's
+`applicationId`). Release builds are signed with Flutter's debug key unless you set up your own
+([Flutter's docs](https://docs.flutter.dev/deployment/android#sign-the-app)); an update must be signed with the same
+key. CI builds the APK on every push and attaches it to a release for each `v*` tag.
+
+<details><summary>On every Echo screen (emulator): the clock, a request, an alarm</summary>
 
 | Model | Screen | dpi | Clock | Request | Alarm |
 |---|---|---|---|---|---|
@@ -44,14 +61,11 @@ Dots with a clock have LED segments, no screen for this.
 | Echo Spot (1st gen), round | 480 × 480 | 240 (estimated) | <img src="docs/screenshots/spot-clock.png" width="220"> | <img src="docs/screenshots/spot-request.png" width="220"> | <img src="docs/screenshots/spot-alarm.png" width="220"> |
 | Echo Spot (2024) | 320 × 240 | 120 (estimated) | <img src="docs/screenshots/spot2024-clock.png" width="220"> | <img src="docs/screenshots/spot2024-request.png" width="220"> | <img src="docs/screenshots/spot2024-alarm.png" width="220"> |
 
-<details><summary>Over Home Assistant's own pages: the switcher and the keyboard</summary>
+</details>
 
-A tap on the clock fades into the screens the integration lists (the demo integration's made-up home here). The page
-itself is Home Assistant's; the template's part is the keyboard on a sign-in page (the screenshots of the switcher
-show the template's own bar of before: hassmic's shell has the bar now). On a round screen the keyboard's rows follow
-the circle.
+<details><summary>Over Home Assistant's own pages, and the keyboard</summary>
 
-| Model | Switcher | Keyboard |
+| Model | Home Assistant's pages | Keyboard |
 |---|---|---|
 | Echo Show 5 (all three) | <img src="docs/screenshots/show5-switcher.png" width="220"> | <img src="docs/screenshots/show5-keyboard.png" width="220"> |
 | Echo Show 8 (1st–3rd gen), Show 10, Echo Hub | <img src="docs/screenshots/show8-switcher.png" width="220"> | <img src="docs/screenshots/show8-keyboard.png" width="220"> |
@@ -67,34 +81,5 @@ the circle.
 
 Again: `flutter build apk --release --target-platform android-x64`, start an emulator, then
 `python3 tools/screenshots.py --serial emulator-5554` (its header says what it needs).
-
-## Build
-
-Flutter 3.41.2 (the Echo Show 5 is Android 7.1, 32-bit ARM, a Mali-T720 GPU without Vulkan: Flutter draws with Skia on
-OpenGL ES there, at 60 fps; keep full-screen live blurs out, they cost half of that).
-
-```sh
-flutter build apk --release --target-platform android-arm
-```
-
-Release builds are signed with Flutter's debug key unless you set up your own
-([Flutter's docs](https://docs.flutter.dev/deployment/android#sign-the-app)); an update must be signed with the same
-key as the installed app. CI builds the APK on every push and attaches it to a release for each `v*` tag.
-
-## Install
-
-```sh
-adb install build/app/outputs/flutter-apk/app-release.apk
-```
-
-Then in Home Assistant: Settings › Devices & services › Echo Local › Configure on the Echo Show, "Screen app":
-`io.github.nt_f.echoscreen` (your fork: its `applicationId`). Empty brings hassmic's own kiosk back. hassmic starts the app
-by the intent `io.github.gamer92000.echodotassist.action.SCREEN` and hands its config to that app alone.
-
-## Make it yours
-
-Fork it, change `applicationId` in `android/app/build.gradle.kts`, and replace the WebView in `lib/main.dart` with
-your own screens. Measured on an Echo Show 5: this app with Home Assistant in its WebView takes 81 MB; the whole
-Echo has 1 GB for Android, hassmic and the screen.
 
 MIT licence.
