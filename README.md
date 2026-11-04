@@ -9,10 +9,6 @@ ringing alarm in your own look. [Echo-Wall](https://github.com/Nt-f/Echo-Wall) g
 
 <img src="docs/screenshots/show5-clock.png" width="32%"> <img src="docs/screenshots/show5-request.png" width="32%"> <img src="docs/screenshots/show5-alarm.png" width="32%">
 
-> [!CAUTION]
-> **Vibecoded, unaudited, your risk.** Written by an AI (Claude) in conversation with the author, and run for real on
-> one Echo Show 5 so far; every other screen below is an emulator's. No warranty, no support.
-
 ## What it does
 
 |                              |                                                                                  |
